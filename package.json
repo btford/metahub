@@ -1,0 +1,28 @@
+{
+  "name": "metahub",
+  "version": "0.0.0",
+  "description": "github metadata cache/mirror",
+  "main": "metahub.js",
+  "scripts": {
+    "test": "mocha tests/"
+  },
+  "keywords": [
+    "github",
+    "api",
+    "metadata",
+    "scrape"
+  ],
+  "author": "Brian Ford",
+  "license": "MIT",
+  "dependencies": {
+    "q": "~0.9.6",
+    "lodash": "~1.3.1",
+    "github": "~0.1.10",
+    "express": "~3.3.4"
+  },
+  "devDependencies": {
+    "rewire": "~1.1.3",
+    "should": "~1.2.2",
+    "mocha": "~1.12.0"
+  }
+}
