@@ -12,6 +12,10 @@ Q.longStackSupport = true;
 var makeCache = require('./lib/cache');
 var makeServer = require('./lib/server');
 
+var qoop = function () {
+  return Q.resolve(arguments);
+};
+
 // recursively remove *_url props
 var stripUrl = require('./lib/strip-url');
 
@@ -41,7 +45,6 @@ var Metahub = function (config) {
 
   this.repo = null;
   this.issues = null;
-  this.prs = null;
 };
 
 util.inherits(Metahub, EventEmitter);
@@ -209,44 +212,78 @@ Metahub.prototype._merge = function (data) {
     action[0].toUpperCase() +
     action.substr(1);
 
-  (this['_' + methodName] || function () {}).apply(this, [data]);
-
-  this.emit(methodName, data);
+  return (this['_' + methodName] || qoop).apply(this, [data]).
+    then(function () {
+      this.emit(methodName, data);
+      return data;
+    }.bind(this));
 };
 
 // there methods are invoked by merge
 // they are applies before event handlers
 
-Metahub.prototype._issueCommentCreated = function (data) {
-  this.__commentCreated(data.issue, data.comment);
-};
-
+Metahub.prototype._issueCommentCreated =
 Metahub.prototype._pullRequestCommentCreated = function (data) {
-  this.__commentCreated(data.pull_request, data.comment);
+  return this.__commentCreated(data.pull_request || data.issue, data.comment);
 };
 
 // issueish = issue or PR
 Metahub.prototype.__commentCreated = function (issueish, comment) {
-  this.issues[issueish.number].comments[comment.id] = 
-    _.merge({}, this.issues[issueish.number].comments[comment.id], comment);
+  if (!this.issues[issueish.number]) {
+    return Q.reject(new Error('tried to add a comment to a non-existant issue'));
+  }
+
+  var issue = this.issues[issueish.number];
+  var comments = issue.comments = issue.comments || {};
+
+  if (comments[comment.id] && newerThan(comments[comment.id].updated_at, comment.updated_at)) {
+    return Q.resolve();
+  }
+
+  comments[comment.id] = _.merge({}, comments[comment.id], comment);
   this._cacheIssues();
+
+  return Q.resolve();
 };
 
 Metahub.prototype._issueClosed =
 Metahub.prototype._issueReopened =
+Metahub.prototype._issueMerged =
+Metahub.prototype._issueReferenced =
+Metahub.prototype._issueAssigned =
 Metahub.prototype._issueOpened = function (data) {
-  this.issues[data.issue.number] = _.merge({}, this.issues[data.issue.number], data.issue);
+  var number = data.issue.number;
+
+  if (this.issues[number] && newerThan(this.issues[number].updated_at, data.updated_at)) {
+    return Q.resolve();
+  }
+
+  this.issues[number] = _.merge({}, this.issues[number], data.issue);
   this._cacheIssues();
+
+  return Q.resolve();
 };
 
 Metahub.prototype._cacheIssues = function () {
   this.cache.set('issues', this.issues);
 };
 
+function newerThan (a, b) {
+  return timestamp(a) > timestamp(b);
+}
 
-Metahub.prototype.log = function () {};
+function timestamp (str) {
+  return +new Date(str);
+}
+
+
+Metahub.prototype.log = function (msg) {
+  this.emit('log', msg);
+};
 
 
 module.exports = function (config) {
   return new Metahub(config);
 };
+
+module.exports.Metahub = Metahub;

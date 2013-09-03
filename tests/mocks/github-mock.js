@@ -10,7 +10,8 @@ module.exports = {
   issues: {
     repoIssues: function (msg) {
       return resolve(msg.page <= 1 ? [{
-        number: 1
+        number: 1,
+        updated_at: "2011-04-22T13:33:48Z"
       }] : []);
     },
     getComments: function (msg) {

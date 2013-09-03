@@ -8,15 +8,15 @@ Great for speeding up requests and avoiding running over GitHub's API limits.
 
 ```
 var config = {
-  
+
 };
 
 var meta = require('metahub')(config);
 
 meta.start();
 
-meta.on('', function () {
-  console.log('something happened');
+meta.on('issueReopened', function (data) {
+  console.log('this issue was reopened: ' + data.number);
 });
 ```
 
