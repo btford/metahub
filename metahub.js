@@ -20,7 +20,7 @@ var qoop = function () {
 var stripUrl = require('./lib/strip-url');
 
 var Metahub = function (config) {
-  this.config = config;
+  this.config = this.config || config;
 
   this.config.msg = {
     user: config.target.user,
