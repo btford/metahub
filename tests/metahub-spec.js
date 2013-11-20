@@ -1,12 +1,10 @@
 var should = require('should');
 var rewire = require('rewire');
 var Q = require('q');
-
-var cache = require('../lib/cache');
-
-var doubleOhSeven = rewire('007');
+var doubleOhSeven = require('007');
 
 var makeMeta = rewire('../metahub');
+
 var originalCache = makeMeta.__get__('makeCache');
 makeMeta.__set__('makeCache', function () {
   return doubleOhSeven(originalCache());
@@ -151,6 +149,23 @@ describe('Metahub', function () {
         });
     });
 
+  });
+
+  describe('#createComment', function() {
+    it('should call the github API with a config object', function() {
+      metahub.rest = doubleOhSeven(metahub.rest);
+      metahub.rest.issues.createComment.returns(Q.resolve());
+
+      metahub.createComment(1234, 'My comment text');
+      metahub.rest.issues.createComment.callCount.should.equal(1);
+      var config = metahub.rest.issues.createComment.callHistory[0][0];
+      config.should.eql({
+            number: 1234,
+            body: 'My comment text',
+            user: 'myname',
+            repo: 'myrepo'
+      });
+    });
   });
 
 /*
