@@ -33,4 +33,18 @@ describe('Cache', function () {
       should.exist(cache.get('foo'));
     });
   });
+
+  describe('#exists', function() {
+    it('should return true if the file exists', function() {
+      fs.existsSync.returns(true);
+      cache.exists('foo').should.equal(true);
+    });
+  });
+
+  describe('#clear', function() {
+    it('should remove the named item\'s file from the cache', function() {
+      cache.clear('foo');
+      fs.unlinkSync.callCount.should.equal(1);
+    });
+  });
 });

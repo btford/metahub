@@ -3,21 +3,21 @@ var should = require('should');
 var stripUrl = require('../lib/strip-url');
 
 describe('strip-url', function () {
-  it('should work on an object', function () {
+  it('should remove url property from an object', function () {
     stripUrl({ url: 'github.com' }).should.not.have.property('url');
   });
 
-  it('should match properties suffixed with `url`', function () {
+  it('should remove all properties suffixed with `url`', function () {
     stripUrl({ some_url: 'github.com' }).should.not.have.property('some_url');
   });
 
-  it('should check deeply nested objects', function () {
+  it('should remove url properties in a deeply nested object', function () {
     var result = stripUrl({ foo: { url: 'github.com' } });
     result.should.have.property('foo');
     result.foo.should.not.have.property('url');
   });
 
-  it('should work on an array', function () {
+  it('should remove url properties from objects in an array', function () {
     stripUrl([{ url: 'github.com' }]).should.have.lengthOf(1).and.includeEql({});
   });
 

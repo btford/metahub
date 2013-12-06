@@ -66,7 +66,7 @@ var makeMeta = require('metahub');
 var config = {
   // etc...
 };
-var meta = makeMata(config);
+var meta = makeMeta(config);
 ```
 
 ### `Metahub`
