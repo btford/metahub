@@ -20,19 +20,19 @@ var qoop = function () {
 var stripUrl = require('./lib/strip-url');
 
 var Metahub = function (config) {
-  config = config || {};
+  this.config = config || {};
 
   this.repo = null;
   this.issues = null;
 
   this.rest = qequire.quire(
-    config.gitHubApi ||
+    this.config.gitHubApi ||
       new GitHubApi({
         version: '3.0.0'
       }));
 
   this.cache = makeCache();
-  this.server = config.server || makeServer();
+  this.server = this.config.server || makeServer();
   this.server.on('hook', this._merge.bind(this));
 
   EventEmitter.call(this);
