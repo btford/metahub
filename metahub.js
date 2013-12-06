@@ -20,12 +20,10 @@ var qoop = function () {
 var stripUrl = require('./lib/strip-url');
 
 var Metahub = function (config) {
-  this.config = this.config || config;
+  config = config || {};
 
-  this.config.msg = {
-    user: config.target.user,
-    repo: config.target.repo
-  };
+  this.repo = null;
+  this.issues = null;
 
   this.rest = qequire.quire(
     config.gitHubApi ||
@@ -33,18 +31,11 @@ var Metahub = function (config) {
         version: '3.0.0'
       }));
 
-  this.rest.authenticate({
-    type: 'basic',
-    username: config.login.username,
-    password: config.login.password
-  });
-
   this.cache = makeCache();
   this.server = config.server || makeServer();
   this.server.on('hook', this._merge.bind(this));
 
-  this.repo = null;
-  this.issues = null;
+  EventEmitter.call(this);
 };
 
 util.inherits(Metahub, EventEmitter);
@@ -93,11 +84,24 @@ Metahub.prototype._populateRepo = function () {
 };
 
 Metahub.prototype.start = function () {
+  this._config();
   return this._populate().
     then(function () {
       this.server.listen(this.config.hook.port);
     }.bind(this));
-}
+};
+
+Metahub.prototype._config = function () {
+  this.config.msg = this.config.msg || {};
+  this.config.msg.user = this.config.msg.user || this.config.target.user;
+  this.config.msg.repo = this.config.msg.repo || this.config.target.repo;
+
+  this.rest.authenticate({
+    type: 'basic',
+    username: this.config.login.username,
+    password: this.config.login.password
+  });
+};
 
 Metahub.prototype.clearCache = function () {
   if (this.cache.exists('repo')) {
