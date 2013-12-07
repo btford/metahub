@@ -18,6 +18,9 @@ describe('Metahub', function () {
       listen: function () {},
       on: function () {}
     }),
+    serverInstance = doubleOhSeven({
+      close: function() {}
+    }),
     config = {
       target: {
         user: 'myname',
@@ -34,6 +37,7 @@ describe('Metahub', function () {
       server: server,
       gitHubApi: require('./mocks/github-mock.js')
     };
+  server.listen.returns(serverInstance);
 
   beforeEach(function () {
     metahub = makeMeta(config);
@@ -66,6 +70,17 @@ describe('Metahub', function () {
         should.exist(metahub.cache.set.callHistory[0]);
         done();
       });
+    });
+  });
+
+  describe('#stop', function() {
+    it('should stop a running server instance', function(done) {
+      metahub.start().done(function () {
+        metahub.stop();
+        should.exist(serverInstance.close.callHistory[0]);
+        done();
+      });
+
     });
   });
 
