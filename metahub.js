@@ -144,6 +144,7 @@ Metahub.prototype.createHook = function () {
     ],
     config: {
       url: this.config.hook.url,
+      content_type: 'json'
     }
   }, this.config.msg);
 
