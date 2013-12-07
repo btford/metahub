@@ -168,6 +168,7 @@ Metahub.prototype.updateHook = function (id, args) {
     ],
     config: {
       url: this.config.hook.url,
+      content_type: 'json'
     }
   });
 
