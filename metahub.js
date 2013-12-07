@@ -87,8 +87,14 @@ Metahub.prototype.start = function () {
   this._config();
   return this._populate().
     then(function () {
-      this.server.listen(this.config.hook.port);
+      this.serverInstance = this.server.listen(this.config.hook.port);
     }.bind(this));
+};
+
+Metahub.prototype.stop = function () {
+  if (this.serverInstance) {
+    this.serverInstance.close();
+  }
 };
 
 Metahub.prototype._config = function () {
