@@ -122,6 +122,11 @@ Metahub.prototype.getCommits = function (number) {
     then(stripUrl);
 };
 
+Metahub.prototype.getContributors = function () {
+  return this.rest.repos.getContributors(this.config.msg).
+    then(stripUrl);
+};
+
 Metahub.prototype.createComment = function (number, body) {
   var msg = _.defaults({
     number: number,
