@@ -75,6 +75,7 @@ Metahub.prototype._populateAndCacheIssues = function (repo) {
     then(function (issues) {
       this.issues = issues;
       this._cacheIssues();
+      this.emit('cacheBuilt');
     }.bind(this));
 };
 
