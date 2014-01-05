@@ -31,6 +31,15 @@ var config = {
     password: 'supersecretpassword'
   },
 
+  // You may also use basic token authentication in place of username and password
+  // by generating a personal access token at 
+  // https://github.com/settings/applications 
+  
+  //login: {
+  //  username: 'yourTokenHere3098438ef098dsf709834',
+  //  password: 'x-oauth-basic'
+  //},
+
   // port to listen on,
   // and URL for Github to ping
   hook: {
