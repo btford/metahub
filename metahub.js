@@ -35,10 +35,57 @@ var Metahub = function (config) {
   this.server = this.config.server || makeServer();
   this.server.on('hook', this._merge.bind(this));
 
+  this.requestQueue = [];
+  this.resolvingQueue = false;
+
   EventEmitter.call(this);
 };
 
 util.inherits(Metahub, EventEmitter);
+
+Metahub.prototype._enqueRequest = function (fn, args) {
+  var deferred = Q.defer();
+
+  this.requestQueue.push({
+    fn: fn,
+    args: args,
+    deferred: deferred
+  });
+
+  if (!this.resolvingQueue) {
+    this.resolvingQueue = true;
+    this._invokeRequest();
+  }
+
+  return deferred.promise;
+};
+
+Metahub.prototype._invokeRequest = function () {
+  var request = this.requestQueue[0];
+  return request.fn.apply(this, request.args).
+    then(function (val) {
+      request.deferred.resolve(val);
+      return val;
+    }).
+    then(this._reolveRequest.bind(this), function (err) {
+      if (err.toString().indexOf('API rate limit exceeded')) {
+        console.log('API rate limit exceeded');
+        setTimeout(function () {
+          console.log('resuming scraping')
+          this._invokeRequest();
+        }.bind(this), 1000 * 60 * 60);
+      }
+    }.bind(this));
+};
+
+Metahub.prototype._reolveRequest = function () {
+  this.requestQueue.shift();
+  if (this.requestQueue.length) {
+    this._invokeRequest();
+  } else {
+    this.resolvingQueue = false;
+  }
+};
 
 // grab all data from Github API and cache it
 Metahub.prototype._populate = function () {
