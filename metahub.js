@@ -276,6 +276,12 @@ Metahub.prototype._tryToMerge = function (data) {
 
 // merge a change event
 Metahub.prototype._merge = function (data) {
+
+  // i have no idea what i'm doing WRT the GitHub API
+  if (data.payload && typeof data.payload === 'string') {
+    data = JSON.parse(data.payload);
+  }
+
   data = stripUrl(data);
   var action = data.action;
 
