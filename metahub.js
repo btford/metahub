@@ -33,7 +33,7 @@ var Metahub = function (config) {
 
   this.cache = makeCache();
   this.server = this.config.server || makeServer();
-  this.server.on('hook', this._merge.bind(this));
+  this.server.on('hook', this._tryToMerge.bind(this));
 
   this.requestQueue = [];
   this.resolvingQueue = false;
@@ -262,6 +262,17 @@ Metahub.prototype.deleteHook = function (id) {
   return this.rest.repos.deleteHook(msg);
 };
 
+
+Metahub.prototype._tryToMerge = function (data) {
+  try {
+    return this._merge(data);
+  } catch (e) {
+    this.log('bad message:');
+    this.log(data);
+    this.log('=======');
+    this.log(e.stack);
+  }
+}
 
 // merge a change event
 Metahub.prototype._merge = function (data) {
