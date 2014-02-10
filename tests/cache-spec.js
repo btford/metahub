@@ -18,7 +18,7 @@ describe('Cache', function () {
   describe('#set', function () {
     it('should save to the right location', function () {
       cache.set('foo', {});
-      should.equal(fs.writeFileSync.callHistory[0][0], process.cwd() + '/../.cache/foo.json');
+      should.equal(fs.writeFileSync.callHistory[0][0], process.cwd() + '/.cache/foo.json');
     });
   });
 
