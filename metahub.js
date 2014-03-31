@@ -176,6 +176,14 @@ Metahub.prototype.getCommits = function (number) {
     then(stripUrl);
 };
 
+Metahub.prototype.getIssue = function (number) {
+  var msg = _.defaults({
+    number: number
+  }, this.config.msg);
+  return this.rest.issues.getRepoIssue(msg).
+    then(stripUrl);
+};
+
 Metahub.prototype.getContributors = function () {
   return this.rest.repos.getContributors(this.config.msg).
     then(stripUrl);
