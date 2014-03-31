@@ -349,6 +349,7 @@ Metahub.prototype._issueOpened = function (data) {
   }
 
   this.issues[number] = _.merge({}, this.issues[number], data.issue);
+  this.issues[number]._updated = Date.now();
   this._cacheIssues();
 
   return Q.resolve();
