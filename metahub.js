@@ -302,8 +302,13 @@ Metahub.prototype._merge = function (data) {
     action[0].toUpperCase() +
     action.substr(1);
 
+  this['_' + methodName] && this.emit('log', 'Running internal ' + methodName +
+                                             ' book-keeping for #' + issueNumber(data));
+
   return (this['_' + methodName] || qoop).apply(this, [data]).
     then(function () {
+      this.emit('log', 'Emitting ' + methodName + ' event for #' + issueNumber(data));
+
       this.emit(methodName, data);
       return data;
     }.bind(this));
@@ -365,6 +370,10 @@ function newerThan (a, b) {
 
 function timestamp (str) {
   return +new Date(str);
+}
+
+function issueNumber (data) {
+  return (data.pull_request || data.issue).number;
 }
 
 

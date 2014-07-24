@@ -108,6 +108,28 @@ describe('Metahub', function () {
       metahub._merge(toMerge);
     });
 
+    it('should emit log events for new comments', function (done) {
+      var toMerge = {
+        action: 'created',
+        comment: {
+          id: 2
+        },
+        issue: {
+          number: 1
+        }
+      };
+
+      metahub.once('log', function (msg) {
+        should.equal(msg, 'Running internal issueCommentCreated book-keeping for #1');
+        metahub.once('log', function (msg) {
+          should.equal(msg, 'Emitting issueCommentCreated event for #1');
+          done();
+        })
+      });
+
+      metahub._merge(toMerge);
+    });
+
     it('should merge new comment data', function (done) {
       var toMerge = {
         action: 'created',
