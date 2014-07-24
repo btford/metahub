@@ -291,26 +291,22 @@ Metahub.prototype._merge = function (data) {
   }
 
   data = stripUrl(data);
-  var action = data.action;
 
-  var entity = data.comment ?
-                  (data.issue ? 'issueComment' : 'pullRequestComment') :
-                data.pull_request ? 'pullRequest' :
-                data.issue ? 'issue' : '';
+  var hook = hookName(data);
 
-  var methodName = entity +
-    action[0].toUpperCase() +
-    action.substr(1);
+  this['_' + hook] && this.emit('log', 'Running internal ' + hook +
+                                       ' book-keeping for #' + issueNumber(data));
 
-  this['_' + methodName] && this.emit('log', 'Running internal ' + methodName +
-                                             ' book-keeping for #' + issueNumber(data));
-
-  return (this['_' + methodName] || qoop).apply(this, [data]).
+  return (this['_' + hook] || qoop).apply(this, [data]).
     then(function () {
-      this.emit('log', 'Emitting ' + methodName + ' event for #' + issueNumber(data));
+      this.emit('log', 'Emitting ' + hook + ' event for #' + issueNumber(data));
 
-      this.emit(methodName, data);
+      this.emit(hook, data);
       return data;
+    }.bind(this), function (err) {
+      this.emit('log', 'Error from internal ' + hook +
+                       ' book-keeping for #' + issueNumber(data) + '\n' +
+                       err);
     }.bind(this));
 };
 
@@ -376,6 +372,21 @@ function issueNumber (data) {
   return (data.pull_request || data.issue).number;
 }
 
+function hookName (data) {
+  var action = data.action;
+  var entity = interestingEntity(data);
+
+  return entity +
+    action[0].toUpperCase() +
+    action.substr(1);
+}
+
+function interestingEntity (data) {
+  return data.comment ?
+      (data.issue ? 'issueComment' : 'pullRequestComment') :
+    data.pull_request ? 'pullRequest' :
+    data.issue ? 'issue' : '';
+}
 
 Metahub.prototype.log = function (msg) {
   this.emit('log', msg);
