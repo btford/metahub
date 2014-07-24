@@ -69,9 +69,9 @@ Metahub.prototype._invokeRequest = function () {
     }).
     then(this._reolveRequest.bind(this), function (err) {
       if (err.toString().indexOf('API rate limit exceeded')) {
-        console.log('API rate limit exceeded');
+        this.log('API rate limit exceeded');
         setTimeout(function () {
-          console.log('resuming scraping')
+          this.log('resuming scraping')
           this._invokeRequest();
         }.bind(this), 1000 * 60 * 60);
       }
