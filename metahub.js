@@ -67,7 +67,7 @@ Metahub.prototype._invokeRequest = function () {
       request.deferred.resolve(val);
       return val;
     }).
-    then(this._reolveRequest.bind(this), function (err) {
+    then(this._resolveRequest.bind(this), function (err) {
       if (err.toString().indexOf('API rate limit exceeded')) {
         this.log('API rate limit exceeded');
         setTimeout(function () {
@@ -78,7 +78,7 @@ Metahub.prototype._invokeRequest = function () {
     }.bind(this));
 };
 
-Metahub.prototype._reolveRequest = function () {
+Metahub.prototype._resolveRequest = function () {
   this.requestQueue.shift();
   if (this.requestQueue.length) {
     this._invokeRequest();
