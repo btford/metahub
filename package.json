@@ -1,6 +1,6 @@
 {
   "name": "metahub",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "github metadata cache/mirror",
   "main": "metahub.js",
   "scripts": {
