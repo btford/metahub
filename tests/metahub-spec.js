@@ -158,6 +158,37 @@ describe('Metahub', function () {
       metahub._merge(toMerge);
     });
 
+    it('should log errors', function (done) {
+
+      var messageCount = 0,
+          allTheMessages = [];
+
+      metahub.on('log', function (msg) {
+        messageCount += 1;
+        allTheMessages.push(msg);
+        if (messageCount === 2) {
+          // the event handler eats the errors for some reason ಠ_ಠ
+          setTimeout(makeAssertions, 0);
+        }
+      });
+
+      function makeAssertions () {
+        allTheMessages[0].trim().should.equal('GitHub hook pushed');
+        var secondMessageLines = allTheMessages[1].trim().split('\n').slice(0, 6).join('\n');
+        secondMessageLines.should.equal(
+          'Bad message:\n' +
+          '  {\n' +
+          '    "payload": "bad data"\n' +
+          '  }\n' +
+          '  =======\n' +
+          '  SyntaxError: Unexpected token b'
+        );
+        done();
+      }
+
+      metahub._tryToMerge({payload: 'bad data'});
+    });
+
     it('should merge new comment data', function (done) {
 
       metahub._merge(toMerge).done(function () {

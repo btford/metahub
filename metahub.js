@@ -272,13 +272,15 @@ Metahub.prototype.deleteHook = function (id) {
 
 
 Metahub.prototype._tryToMerge = function (data) {
+  this.log('GitHub hook pushed');
   try {
     return this._merge(data);
   } catch (e) {
-    this.log('bad message:');
-    this.log(data);
-    this.log('=======');
-    this.log(e.stack);
+    this.log('Bad message:\n' + indent(
+      JSON.stringify(data, null, 2) +
+      '\n=======\n' +
+      e.stack
+    ));
   }
 }
 
@@ -294,22 +296,22 @@ Metahub.prototype._merge = function (data) {
 
   var hook = hookName(data);
 
-  this['_' + hook] && this.emit('log', 'Running internal ' + hook +
-                                       ' book-keeping for #' + issueNumber(data));
+  this['_' + hook] && this.log('Running internal ' + hook +
+                               ' book-keeping for #' + issueNumber(data));
 
   return (this['_' + hook] || qoop).apply(this, [data]).
     then(function () {
-      this.emit('log', 'Emitting ' + hook + ' event for:\n' + indent(logDataSummary(data)));
+      this.log('Emitting ' + hook + ' event for:\n' + indent(logDataSummary(data)));
 
       this.emit(hook, data);
       return data;
     }.bind(this), function (err) {
-      this.emit('log', 'Error from internal ' + hook +
-                       ' book-keeping for:\n' +
-                       indent(
-                          logDataSummary(data) + '\n' +
-                          err
-                       ));
+      this.log('Error from internal ' + hook +
+               ' book-keeping for:\n' +
+               indent(
+                  logDataSummary(data) + '\n' +
+                  err
+               ));
     }.bind(this));
 };
 
@@ -393,7 +395,8 @@ function interestingEntity (data) {
 
 function indent (str, amount) {
   amount = amount || '  ';
-  return str.split('\n').map(function (line) {
+  str = (str instanceof Array) ? str : str.split('\n');
+  return str.map(function (line) {
     return amount + line;
   }).join('\n');
 }
