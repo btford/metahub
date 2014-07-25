@@ -317,11 +317,14 @@ Metahub.prototype._merge = function (data) {
 Metahub.prototype._issueCommentCreated =
 Metahub.prototype._pullRequestCommentCreated = function (data) {
   var issue = issueish(data),
+      number = issue.number,
       comment = data.comment;
 
   if (!this.issues[issue.number]) {
-    this.log('Tried to add a comment to a non-existant issue', data);
-    return Q.resolve();
+    this.log('Tried to add a comment to a non-existent issue\n' +
+        indent('Recovering by adding issue to cache'), data);
+
+    this.issues[number] = _.merge({}, this.issues[number], issue);
   }
 
   var issue = this.issues[issue.number];
@@ -347,6 +350,7 @@ Metahub.prototype._issueOpened = function (data) {
   var number = data.issue.number;
 
   if (this.issues[number] && newerThan(this.issues[number].updated_at, data.updated_at)) {
+    this.log('Tried to update cache with data older than dates from the cache', data);
     return Q.resolve();
   }
 

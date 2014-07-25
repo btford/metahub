@@ -10,77 +10,27 @@ makeMeta.__set__('makeCache', function () {
   return doubleOhSeven(originalCache());
 });
 
+var mockPayload = require('./mocks/payload-mock');
+var makeMockConfig = require('./mocks/config-mock');
 
 describe('Metahub', function () {
-
-  var mockUser = {
-    "login": "btford",
-    "id": 5445410,
-    "type": "User",
-    "site_admin": false
-  };
-
-  var mockRepo = {
-    full_name: 'angular/angular.js'
-  };
-
-  var toMergeTemplate = {
-    action: 'created',
-    comment: {
-      id: 2,
-      body: 'help it broked',
-      user: mockUser
-    },
-    issue: {
-      number: 1,
-      title: 'everything is broken',
-      body: ':(',
-      user: mockUser
-    },
-    repository: mockRepo
-  };
-
-  var toMerge;
-
-  var metahub,
-    server = doubleOhSeven({
-      listen: function () {},
-      on: function () {}
-    }),
-    serverInstance = doubleOhSeven({
-      close: function() {}
-    }),
-    config = {
-      target: {
-        user: 'myname',
-        repo: 'myrepo'
-      },
-      login: {
-        username: 'myrobotname',
-        password: 'supersecretpassword'
-      },
-      hook: {
-        url: 'http://example.com:1234',
-        port: 1234
-      },
-      server: server,
-      gitHubApi: require('./mocks/github-mock.js')
-    };
-
-  server.listen.returns(serverInstance);
+  var metahub, config, toMerge;
 
   beforeEach(function () {
+    config = makeMockConfig();
     metahub = makeMeta(config);
-    toMerge = JSON.parse(JSON.stringify(toMergeTemplate));
+    toMerge = JSON.parse(JSON.stringify(mockPayload.commentCreated));
   });
+
 
   describe('#start', function () {
     it('should start the server on the specified port', function (done) {
       metahub.start().done(function () {
-        should.equal(server.listen.callHistory[0][0], config.hook.port);
+        should.equal(config.server.listen.callHistory[0][0], config.hook.port);
         done();
       });
     });
+
 
     it('should initialize repo issues', function (done) {
       metahub.start().done(function () {
@@ -89,12 +39,14 @@ describe('Metahub', function () {
       });
     });
 
+
     it('should initialize repo data', function (done) {
       metahub.start().done(function () {
         should.exist(metahub.repo);
         done();
       });
     });
+
 
     it('should cache data', function (done) {
       metahub.start().done(function () {
@@ -104,16 +56,17 @@ describe('Metahub', function () {
     });
   });
 
+
   describe('#stop', function() {
     it('should stop a running server instance', function(done) {
       metahub.start().done(function () {
         metahub.stop();
-        should.exist(serverInstance.close.callHistory[0]);
+        should.exist(config._serverInstance.close.callHistory[0]);
         done();
       });
-
     });
   });
+
 
   describe('#merge', function () {
     beforeEach(function (done) {
@@ -121,7 +74,6 @@ describe('Metahub', function () {
     });
 
     it('should emit events for new comments', function (done) {
-
       metahub.on('issueCommentCreated', function (data) {
         data.should.eql(toMerge);
         done();
@@ -130,8 +82,8 @@ describe('Metahub', function () {
       metahub._merge(toMerge);
     });
 
-    it('should emit log events for new comments', function (done) {
 
+    it('should emit log events for new comments', function (done) {
       var messageCount = 0,
           allTheMessages = [];
 
@@ -158,8 +110,8 @@ describe('Metahub', function () {
       metahub._merge(toMerge);
     });
 
-    it('should log errors', function (done) {
 
+    it('should log errors', function (done) {
       var messageCount = 0,
           allTheMessages = [];
 
@@ -173,9 +125,8 @@ describe('Metahub', function () {
       });
 
       function makeAssertions () {
-        allTheMessages[0].trim().should.equal('GitHub hook pushed');
-        var secondMessageLines = allTheMessages[1].trim().split('\n').slice(0, 6).join('\n');
-        secondMessageLines.should.equal(
+        allTheMessages[0].should.equal('GitHub hook pushed');
+        allTheMessages[1].should.startWith(
           'Bad message:\n' +
           '  {\n' +
           '    "payload": "bad data"\n' +
@@ -189,14 +140,58 @@ describe('Metahub', function () {
       metahub._merge({payload: 'bad data'});
     });
 
-    it('should merge new comment data', function (done) {
 
+    it('should merge new comment data', function (done) {
       metahub._merge(toMerge).done(function () {
         should.exist(metahub.issues['1'].comments['2']);
         should.equal(metahub.issues['1'].comments['2'].body, 'help it broked');
         done();
       });
     });
+
+
+    it('should merge new comments data even if the issue does not exist', function (done) {
+      delete metahub.issues['1'];
+
+      metahub._merge(toMerge).done(function () {
+        should.exist(metahub.issues['1']);
+        should.equal(metahub.issues['1'].comments['2'].body, 'help it broked');
+        done();
+      });
+    });
+
+
+    it('should log when a new comment\'s corresponding issue does not exist', function (done) {
+      delete metahub.issues['1'];
+
+      var messageCount = 0,
+          allTheMessages = [];
+
+      metahub.on('log', function (msg) {
+        messageCount += 1;
+        allTheMessages.push(msg);
+        if (messageCount >= 4) {
+          // the event handler eats the errors for some reason ಠ_ಠ
+          setTimeout(makeAssertions, 0);
+        }
+      });
+
+      function makeAssertions () {
+        allTheMessages[0].trim().should.equal('GitHub hook pushed');
+        allTheMessages[1].trim().should.equal('Running internal issueCommentCreated book-keeping for #1');
+        allTheMessages[2].trim().should.equal(
+          'Tried to add a comment to a non-existent issue\n' +
+          '  Recovering by adding issue to cache for:\n' +
+          '  angular/angular.js/#1 - everything is broken\n' +
+          '    issue: ":(" -btford\n' +
+          '    comment: "help it broked" -btford'
+        );
+        done();
+      }
+
+      metahub._merge(toMerge);
+    });
+
 
     it('should log issues from book-keeping', function (done) {
       metahub._issueCommentCreated = function () {
@@ -239,14 +234,14 @@ describe('Metahub', function () {
         comment: {
           id: 2,
           body: 'foo',
-          user: mockUser,
+          user: mockPayload.user,
           updated_at: '2011-04-23T10:43:00Z'
         },
         issue: {
           number: 1,
-          user: mockUser
+          user: mockPayload.user
         },
-        repository: mockRepo
+        repository: mockPayload.repository
       };
 
       var toUpdate = {
@@ -254,14 +249,14 @@ describe('Metahub', function () {
         comment: {
           id: 2,
           body: 'bar',
-          user: mockUser,
+          user: mockPayload.user,
           updated_at: '2011-04-22T13:33:00Z'
         },
         issue: {
           number: 1,
-          user: mockUser
+          user: mockPayload.user
         },
-        repository: mockRepo
+        repository: mockPayload.repository
       };
 
       metahub.
@@ -280,6 +275,7 @@ describe('Metahub', function () {
 
   describe('#createComment', function() {
     it('should call the github API with a config object', function() {
+      metahub._config();
       metahub.rest = doubleOhSeven(metahub.rest);
       metahub.rest.issues.createComment.returns(Q.resolve());
 
@@ -287,10 +283,10 @@ describe('Metahub', function () {
       metahub.rest.issues.createComment.callCount.should.equal(1);
       var config = metahub.rest.issues.createComment.callHistory[0][0];
       config.should.eql({
-            number: 1234,
-            body: 'My comment text',
-            user: 'myname',
-            repo: 'myrepo'
+        number: 1234,
+        body: 'My comment text',
+        user: 'myname',
+        repo: 'myrepo'
       });
     });
   });
