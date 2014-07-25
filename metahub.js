@@ -292,19 +292,22 @@ Metahub.prototype._merge = function (data) {
 
   var hook = hookName(data);
 
+
+  var runExternalHooks = function () {
+    this.log('Emitting ' + hook + ' event', data);
+    this.emit(hook, data);
+    return data;
+  }.bind(this);
+
   if (this['_' + hook]) {
     this.log('Running internal ' + hook + ' book-keeping for #' + issueNumber(data));
     return Q.try(this['_' + hook].bind(this), data).
-      then(function () {
-        this.log('Emitting ' + hook + ' event', data);
-        this.emit(hook, data);
-        return data;
-      }.bind(this), function (err) {
+      then(runExternalHooks, function (err) {
         this.log('Error from internal ' + hook + ' book-keeping', data, err);
       }.bind(this));
+  } else {
+    return Q.resolve(runExternalHooks());
   }
-
-  return Q.resolve(data);
 };
 
 // there methods are invoked by merge
