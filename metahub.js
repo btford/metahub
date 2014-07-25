@@ -12,10 +12,6 @@ Q.longStackSupport = true;
 var makeCache = require('./lib/cache');
 var makeServer = require('./lib/server');
 
-var qoop = function () {
-  return Q.resolve(arguments);
-};
-
 // recursively remove *_url props
 var stripUrl = require('./lib/strip-url');
 
