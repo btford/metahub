@@ -13,6 +13,35 @@ makeMeta.__set__('makeCache', function () {
 
 describe('Metahub', function () {
 
+  var mockUser = {
+    "login": "btford",
+    "id": 5445410,
+    "type": "User",
+    "site_admin": false
+  };
+
+  var mockRepo = {
+    full_name: 'angular/angular.js'
+  };
+
+  var toMergeTemplate = {
+    action: 'created',
+    comment: {
+      id: 2,
+      body: 'help it broked',
+      user: mockUser
+    },
+    issue: {
+      number: 1,
+      title: 'everything is broken',
+      body: ':(',
+      user: mockUser
+    },
+    repository: mockRepo
+  };
+
+  var toMerge;
+
   var metahub,
     server = doubleOhSeven({
       listen: function () {},
@@ -37,10 +66,12 @@ describe('Metahub', function () {
       server: server,
       gitHubApi: require('./mocks/github-mock.js')
     };
+
   server.listen.returns(serverInstance);
 
   beforeEach(function () {
     metahub = makeMeta(config);
+    toMerge = JSON.parse(JSON.stringify(toMergeTemplate));
   });
 
   describe('#start', function () {
@@ -90,15 +121,6 @@ describe('Metahub', function () {
     });
 
     it('should emit events for new comments', function (done) {
-      var toMerge = {
-        action: 'created',
-        comment: {
-          id: 2
-        },
-        issue: {
-          number: 1
-        }
-      };
 
       metahub.on('issueCommentCreated', function (data) {
         data.should.eql(toMerge);
@@ -109,42 +131,38 @@ describe('Metahub', function () {
     });
 
     it('should emit log events for new comments', function (done) {
-      var toMerge = {
-        action: 'created',
-        comment: {
-          id: 2
-        },
-        issue: {
-          number: 1
-        }
-      };
 
-      metahub.once('log', function (msg) {
-        should.equal(msg, 'Running internal issueCommentCreated book-keeping for #1');
-        metahub.once('log', function (msg) {
-          should.equal(msg, 'Emitting issueCommentCreated event for #1');
-          done();
-        })
+      var messageCount = 0,
+          allTheMessages = [];
+
+      metahub.on('log', function (msg) {
+        messageCount += 1;
+        allTheMessages.push(msg);
+        if (messageCount === 2) {
+          // the event handler eats the errors for some reason ಠ_ಠ
+          setTimeout(makeAssertions, 0);
+        }
       });
+
+      function makeAssertions () {
+        allTheMessages[0].trim().should.equal('Running internal issueCommentCreated book-keeping for #1');
+        allTheMessages[1].trim().should.equal(
+          'Emitting issueCommentCreated event for:\n' +
+          '  angular/angular.js/#1 - everything is broken\n' +
+          '    issue: ":(" -btford\n' +
+          '    comment: "help it broked" -btford'
+        );
+        done();
+      }
 
       metahub._merge(toMerge);
     });
 
     it('should merge new comment data', function (done) {
-      var toMerge = {
-        action: 'created',
-        comment: {
-          id: 2,
-          body: 'foo'
-        },
-        issue: {
-          number: 1
-        }
-      };
 
       metahub._merge(toMerge).done(function () {
         should.exist(metahub.issues['1'].comments['2']);
-        should.equal(metahub.issues['1'].comments['2'].body, 'foo');
+        should.equal(metahub.issues['1'].comments['2'].body, 'help it broked');
         done();
       });
     });
@@ -155,11 +173,14 @@ describe('Metahub', function () {
         comment: {
           id: 2,
           body: 'foo',
+          user: mockUser,
           updated_at: '2011-04-23T10:43:00Z'
         },
         issue: {
-          number: 1
-        }
+          number: 1,
+          user: mockUser
+        },
+        repository: mockRepo
       };
 
       var toUpdate = {
@@ -167,11 +188,14 @@ describe('Metahub', function () {
         comment: {
           id: 2,
           body: 'bar',
+          user: mockUser,
           updated_at: '2011-04-22T13:33:00Z'
         },
         issue: {
-          number: 1
-        }
+          number: 1,
+          user: mockUser
+        },
+        repository: mockRepo
       };
 
       metahub.

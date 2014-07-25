@@ -299,14 +299,17 @@ Metahub.prototype._merge = function (data) {
 
   return (this['_' + hook] || qoop).apply(this, [data]).
     then(function () {
-      this.emit('log', 'Emitting ' + hook + ' event for #' + issueNumber(data));
+      this.emit('log', 'Emitting ' + hook + ' event for:\n' + indent(logDataSummary(data)));
 
       this.emit(hook, data);
       return data;
     }.bind(this), function (err) {
       this.emit('log', 'Error from internal ' + hook +
-                       ' book-keeping for #' + issueNumber(data) + '\n' +
-                       err);
+                       ' book-keeping for:\n' +
+                       indent(
+                          logDataSummary(data) + '\n' +
+                          err
+                       ));
     }.bind(this));
 };
 
@@ -386,6 +389,31 @@ function interestingEntity (data) {
       (data.issue ? 'issueComment' : 'pullRequestComment') :
     data.pull_request ? 'pullRequest' :
     data.issue ? 'issue' : '';
+}
+
+function indent (str, amount) {
+  amount = amount || '  ';
+  return str.split('\n').map(function (line) {
+    return amount + line;
+  }).join('\n');
+}
+
+function logDataSummary (data) {
+  return logTitle(data) + '\n' +
+      indent(
+        'issue: ' + summerizeBody(data.issue) +
+        'comment: ' + summerizeBody(data.comment)
+      );
+}
+
+function logTitle (data) {
+  return data.repository.full_name + '/#' + issueNumber(data) + ' - ' + data.issue.title;
+}
+
+function summerizeBody (data) {
+  return data.body ?
+      ('"' + data.body.substr(0, 80) + (data.body.length > 80 ? '…' : '') +
+          '" -' + data.user.login + '\n') : '';
 }
 
 Metahub.prototype.log = function (msg) {
