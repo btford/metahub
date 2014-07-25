@@ -33,7 +33,7 @@ var Metahub = function (config) {
 
   this.cache = makeCache();
   this.server = this.config.server || makeServer();
-  this.server.on('hook', this._tryToMerge.bind(this));
+  this.server.on('hook', this._merge.bind(this));
 
   this.requestQueue = [];
   this.resolvingQueue = false;
@@ -272,47 +272,43 @@ Metahub.prototype.deleteHook = function (id) {
 
 
 Metahub.prototype._tryToMerge = function (data) {
+  return this._merge(data);
+};
+
+// merge a change event
+Metahub.prototype._merge = function (data) {
   this.log('GitHub hook pushed');
+
+  // i have no idea what i'm doing WRT the GitHub API
   try {
-    return this._merge(data);
+    if (data.payload && typeof data.payload === 'string') {
+      data = JSON.parse(data.payload);
+    }
+    data = stripUrl(data);
   } catch (e) {
     this.log('Bad message:\n' + indent(
       JSON.stringify(data, null, 2) +
       '\n=======\n' +
       e.stack
     ));
+    return Q.reject();
   }
-}
-
-// merge a change event
-Metahub.prototype._merge = function (data) {
-
-  // i have no idea what i'm doing WRT the GitHub API
-  if (data.payload && typeof data.payload === 'string') {
-    data = JSON.parse(data.payload);
-  }
-
-  data = stripUrl(data);
 
   var hook = hookName(data);
 
-  this['_' + hook] && this.log('Running internal ' + hook +
-                               ' book-keeping for #' + issueNumber(data));
+  if (this['_' + hook]) {
+    this.log('Running internal ' + hook + ' book-keeping for #' + issueNumber(data));
+    return Q.try(this['_' + hook].bind(this), data).
+      then(function () {
+        this.log('Emitting ' + hook + ' event', data);
+        this.emit(hook, data);
+        return data;
+      }.bind(this), function (err) {
+        this.log('Error from internal ' + hook + ' book-keeping', data, err);
+      }.bind(this));
+  }
 
-  return (this['_' + hook] || qoop).apply(this, [data]).
-    then(function () {
-      this.log('Emitting ' + hook + ' event for:\n' + indent(logDataSummary(data)));
-
-      this.emit(hook, data);
-      return data;
-    }.bind(this), function (err) {
-      this.log('Error from internal ' + hook +
-               ' book-keeping for:\n' +
-               indent(
-                  logDataSummary(data) + '\n' +
-                  err
-               ));
-    }.bind(this));
+  return Q.resolve(data);
 };
 
 // there methods are invoked by merge
@@ -320,19 +316,19 @@ Metahub.prototype._merge = function (data) {
 
 Metahub.prototype._issueCommentCreated =
 Metahub.prototype._pullRequestCommentCreated = function (data) {
-  return this.__commentCreated(data.pull_request || data.issue, data.comment);
-};
+  var issue = issueish(data),
+      comment = data.comment;
 
-// issueish = issue or PR
-Metahub.prototype.__commentCreated = function (issueish, comment) {
-  if (!this.issues[issueish.number]) {
-    return Q.reject(new Error('tried to add a comment to a non-existant issue'));
+  if (!this.issues[issue.number]) {
+    this.log('Tried to add a comment to a non-existant issue', data);
+    return Q.resolve();
   }
 
-  var issue = this.issues[issueish.number];
+  var issue = this.issues[issue.number];
   var comments = issue.comments = issue.comments || {};
 
   if (comments[comment.id] && newerThan(comments[comment.id].updated_at, comment.updated_at)) {
+    this.log('Tried to update cache with data older than dates from the cache', data);
     return Q.resolve();
   }
 
@@ -401,6 +397,10 @@ function indent (str, amount) {
   }).join('\n');
 }
 
+function issueish (data) {
+  return data.pull_request || data.issue;
+}
+
 function logDataSummary (data) {
   return logTitle(data) + '\n' +
       indent(
@@ -419,7 +419,13 @@ function summerizeBody (data) {
           '" -' + data.user.login + '\n') : '';
 }
 
-Metahub.prototype.log = function (msg) {
+Metahub.prototype.log = function (msg, data, exception) {
+  if (data) {
+    msg += ' for:\n' + indent(logDataSummary(data));
+  }
+  if (exception) {
+    msg += indent((data ? '\n=======\n' : '') + (exception.stack || exception));
+  }
   this.emit('log', msg);
 };
 

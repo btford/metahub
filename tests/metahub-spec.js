@@ -138,15 +138,16 @@ describe('Metahub', function () {
       metahub.on('log', function (msg) {
         messageCount += 1;
         allTheMessages.push(msg);
-        if (messageCount === 2) {
+        if (messageCount >= 3) {
           // the event handler eats the errors for some reason ಠ_ಠ
           setTimeout(makeAssertions, 0);
         }
       });
 
       function makeAssertions () {
-        allTheMessages[0].trim().should.equal('Running internal issueCommentCreated book-keeping for #1');
-        allTheMessages[1].trim().should.equal(
+        allTheMessages[0].trim().should.equal('GitHub hook pushed');
+        allTheMessages[1].trim().should.equal('Running internal issueCommentCreated book-keeping for #1');
+        allTheMessages[2].trim().should.equal(
           'Emitting issueCommentCreated event for:\n' +
           '  angular/angular.js/#1 - everything is broken\n' +
           '    issue: ":(" -btford\n' +
@@ -154,7 +155,6 @@ describe('Metahub', function () {
         );
         done();
       }
-
       metahub._merge(toMerge);
     });
 
@@ -166,7 +166,7 @@ describe('Metahub', function () {
       metahub.on('log', function (msg) {
         messageCount += 1;
         allTheMessages.push(msg);
-        if (messageCount === 2) {
+        if (messageCount >= 2) {
           // the event handler eats the errors for some reason ಠ_ಠ
           setTimeout(makeAssertions, 0);
         }
@@ -186,7 +186,7 @@ describe('Metahub', function () {
         done();
       }
 
-      metahub._tryToMerge({payload: 'bad data'});
+      metahub._merge({payload: 'bad data'});
     });
 
     it('should merge new comment data', function (done) {
@@ -196,6 +196,41 @@ describe('Metahub', function () {
         should.equal(metahub.issues['1'].comments['2'].body, 'help it broked');
         done();
       });
+    });
+
+    it('should log issues from book-keeping', function (done) {
+      metahub._issueCommentCreated = function () {
+        throw new Error('oops');
+      };
+
+      var messageCount = 0,
+          allTheMessages = [];
+
+      metahub.on('log', function (msg) {
+        messageCount += 1;
+        allTheMessages.push(msg);
+        if (messageCount === 3) {
+          // the event handler eats the errors for some reason ಠ_ಠ
+          setTimeout(makeAssertions, 0);
+        }
+      });
+
+      function makeAssertions () {
+        allTheMessages[0].should.equal('GitHub hook pushed');
+        allTheMessages[1].should.equal('Running internal issueCommentCreated book-keeping for #1');
+        allTheMessages[2].should.startWith(
+          'Error from internal issueCommentCreated book-keeping for:\n' +
+          '  angular/angular.js/#1 - everything is broken\n' +
+          '    issue: ":(" -btford\n' +
+          '    comment: "help it broked" -btford\n' +
+          '      \n' +
+          '  =======\n' +
+          '  Error: oops\n'
+        );
+        done();
+      }
+
+      metahub._merge(toMerge);
     });
 
     it('should not override existing comment data with older data', function (done) {
