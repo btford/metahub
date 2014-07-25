@@ -18,7 +18,7 @@ describe('strip-url', function () {
   });
 
   it('should remove url properties from objects in an array', function () {
-    stripUrl([{ url: 'github.com' }]).should.have.lengthOf(1).and.includeEql({});
+    stripUrl([{ url: 'github.com' }]).should.containEql({}).and.have.lengthOf(1);
   });
 
   it('should not strip non-url properties', function () {

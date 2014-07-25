@@ -21,11 +21,11 @@
     "express": "~3.3.4"
   },
   "devDependencies": {
-    "rewire": "~1.1.3",
     "007": "~0.0.2",
-    "qequire": "~0.0.2",
-    "should": "~1.2.2",
     "mocha": "~1.12.0",
+    "qequire": "~0.0.2",
+    "rewire": "~1.1.3",
+    "should": "^4.0.4",
     "sinon": "~1.7.3"
   }
 }
