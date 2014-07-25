@@ -1,6 +1,6 @@
 # metahub
 
-[![Build Status](https://travis-ci.org/btford/metahub.png)](https://travis-ci.org/btford/metahub)
+[![Build Status](https://travis-ci.org/btford/metahub.svg)](https://travis-ci.org/btford/metahub)
 
 
 A per-repo, always-up-to-date cache of Github's meta-data (like issues, PRs, and comments).
