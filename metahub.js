@@ -407,13 +407,13 @@ function issueish (data) {
 function logDataSummary (data) {
   return logTitle(data) + '\n' +
       indent(
-        'issue: ' + summerizeBody(data.issue) +
-        'comment: ' + summerizeBody(data.comment)
+        'issue: ' + summerizeBody(issueish(data)) +
+        (data.comment ? 'comment: ' + summerizeBody(data.comment) : '')
       );
 }
 
 function logTitle (data) {
-  return data.repository.full_name + '/#' + issueNumber(data) + ' - ' + data.issue.title;
+  return data.repository.full_name + '/#' + issueNumber(data) + ' - ' + issueish(data).title;
 }
 
 function summerizeBody (data) {

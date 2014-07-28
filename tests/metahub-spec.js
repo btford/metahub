@@ -82,6 +82,141 @@ describe('Metahub', function () {
       metahub._merge(toMerge);
     });
 
+    it('should emit events for pullRequestClosed', function (done) {
+      metahub.on('pullRequestClosed', function (data) {
+        done();
+      });
+
+      metahub._merge({
+        "action": "closed",
+        "number": 432,
+        "pull_request": {
+          "url": "https://api.github.com/repos/myuser/myrepo/pulls/432",
+          "number": 432,
+          "state": "closed",
+          "title": "somthing is broken",
+          "user": {
+            "login": "test"
+          },
+          "body": "hello",
+          "created_at": "2014-04-24T17:44:42Z",
+          "updated_at": "2014-07-26T00:10:24Z",
+          "closed_at": "2014-07-26T00:10:24Z",
+          "merged_at": "2014-07-26T00:10:24Z",
+          "merge_commit_sha": "123425697364578063q476503465",
+          "assignee": null,
+          "milestone": null,
+          "head": {
+            "label": "test:troubleshooting/ws",
+            "ref": "troubleshooting/ws",
+            "sha": "7ee2f85eae4d89a08b74dce71bfebe3ff19e92f0",
+            "user": {
+              "login": "test"
+            },
+            "repo": {
+              "id": 16144832,
+              "name": "myrepo",
+              "full_name": "test/myrepo",
+              "owner": {
+                "login": "test",
+                "type": "User",
+                "site_admin": false
+              },
+              "private": false,
+              "html_url": "https://github.com/test/myrepo",
+              "description": "Spectacular Test Runner for JavaScript",
+              "fork": true,
+              "url": "https://api.github.com/repos/test/myrepo",
+              "created_at": "2014-01-22T16:28:43Z",
+              "updated_at": "2014-06-24T11:43:34Z",
+              "pushed_at": "2014-06-24T11:43:34Z",
+              "homepage": "http://myuser.github.io",
+              "size": 6522,
+              "stargazers_count": 0,
+              "watchers_count": 0,
+              "language": "CoffeeScript",
+              "has_issues": false,
+              "has_downloads": true,
+              "has_wiki": false,
+              "forks_count": 1,
+              "mirror_url": null,
+              "open_issues_count": 0,
+              "forks": 1,
+              "open_issues": 0,
+              "watchers": 0,
+              "default_branch": "master"
+            }
+          },
+          "base": {
+            "label": "myuser:master",
+            "ref": "master",
+            "sha": "3873c5311932176a08e774f3efe1c21ee74064c0",
+            "user": {
+              "login": "myuser"
+            },
+            "repo": {
+              "id": 2560988,
+              "name": "myrepo",
+              "full_name": "myuser/myrepo",
+              "owner": {
+                "login": "myuser",
+                "type": "Organization",
+                "site_admin": false
+              }
+            }
+          },
+          "merged": true,
+          "mergeable": null,
+          "mergeable_state": "unknown",
+          "merged_by": {
+            "login": "test2"
+          },
+          "comments": 5,
+          "review_comments": 5,
+          "commits": 1,
+          "additions": 12,
+          "deletions": 0,
+          "changed_files": 1
+        },
+        "repository": {
+          "id": 2560988,
+          "name": "myrepo",
+          "full_name": "myuser/myrepo",
+          "owner": {
+            "login": "myuser",
+            "type": "Organization"
+          },
+          "private": false,
+          "html_url": "https://github.com/myuser/myrepo",
+          "description": "Spectacular Test Runner for JavaScript",
+          "fork": false,
+          "url": "https://api.github.com/repos/myuser/myrepo",
+          "created_at": "2011-10-12T07:55:46Z",
+          "updated_at": "2014-07-25T21:48:53Z",
+          "pushed_at": "2014-07-26T00:10:25Z",
+          "size": 16120,
+          "stargazers_count": 3806,
+          "watchers_count": 3806,
+          "language": "CoffeeScript",
+          "has_issues": true,
+          "has_downloads": true,
+          "has_wiki": false,
+          "forks_count": 646,
+          "mirror_url": null,
+          "open_issues_count": 203,
+          "forks": 646,
+          "open_issues": 203,
+          "watchers": 3806,
+          "default_branch": "master"
+        },
+        "sender": {
+          "login": "test2",
+          "type": "User",
+          "site_admin": false
+        }
+      })
+    });
+
 
     it('should emit log events for new comments', function (done) {
       var messageCount = 0,
