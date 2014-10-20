@@ -197,7 +197,7 @@ Metahub.prototype.createComment = function (number, body) {
 
 Metahub.prototype.createHook = function () {
 
-  var msg = _.defaults({
+  var msg = _.defaults(this.config.msg, {
     name: 'web',
     active: true,
     events: [
@@ -209,7 +209,7 @@ Metahub.prototype.createHook = function () {
       url: this.config.hook.url,
       content_type: 'json'
     }
-  }, this.config.msg);
+  });
 
   return this.rest.repos.createHook(msg);
 };
