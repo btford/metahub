@@ -8,7 +8,7 @@ Great for speeding up requests and avoiding running over GitHub's API limits.
 
 ## What is it good for?
 Long-running services that want to frequently calculate/respond to metrics based on Github Issues, PRs, and comments.
-Metahub was created for [Mary Poppins](https://github.com/btford/mary-poppins), a tool for helping to manage issues and PRs on populat Github repos.
+Metahub was created for [Mary Poppins](https://github.com/btford/mary-poppins), a tool for helping to manage issues and PRs on popular Github repos.
 
 For a more lightweight approach, you might want to look into:
 
